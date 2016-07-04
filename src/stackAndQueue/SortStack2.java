@@ -25,7 +25,7 @@ public class SortStack2 {
     public static void sortStackByStack(Stack<Integer> stack) {
         Stack<Integer> help = new Stack<>();
         while (!stack.isEmpty()) {
-            int cur = stack.pop();   // cur已经被弹出来了,不在stack中了啊!!!
+            int cur = stack.pop();   // cur已经被弹出来了,不在stack中了啊!!! cur元素在空中挂着呢
             while (!help.isEmpty() && cur > help.peek()) {
                 stack.push(help.pop());
             }

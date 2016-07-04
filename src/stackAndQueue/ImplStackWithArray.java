@@ -15,7 +15,7 @@ public class ImplStackWithArray {
     }
 
     public void push(Integer num){
-        // 此时top指向最高的栈顶,再push的话,就要溢出了啊
+        // 此时top指向数组的最后一个元素,再push的话,就要溢出了啊
         if(top==size-1){
             throw new StackOverflowError();
         }

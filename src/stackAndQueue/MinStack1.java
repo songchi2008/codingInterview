@@ -1,5 +1,6 @@
 package stackAndQueue;
 
+import java.util.EmptyStackException;
 import java.util.Stack;
 
 /**
@@ -26,22 +27,34 @@ public class MinStack1 {
     }
 
     public int pop(){
-        return 0;
+        if(stackData.isEmpty()){
+            throw new EmptyStackException();
+        }
+        int cur =stackData.pop();
+        if(cur==stackMin.peek()){
+            stackMin.pop();
+        }
+        return cur;
+    }
+
+    public int getMin(){
+        return stackMin.peek();
     }
 
 
     public static void main(String[] args) {
-//        MinStack1 stack1 = new MinStack1();
-//        stack1.push(-38);
-//        stack1.push(4);
-//        stack1.push(5);
-//        stack1.push(1);
-//        stack1.push(2);
-//        stack1.push(1);
-//        stack1.push(-3);
-//        stack1.push(8);
-//        stack1.push(9);
-//        System.out.println("栈中最小元素为:   "+stack1.getMin());
+        MinStack1 stack1 = new MinStack1();
+        stack1.push(-38);
+        stack1.push(4);
+        stack1.push(5);
+        stack1.push(1);
+        stack1.push(2);
+        stack1.push(1);
+        stack1.push(-3);
+        stack1.push(8);
+        stack1.push(-99);
+        stack1.push(9);
+        System.out.println("栈中最小元素为:   "+stack1.getMin());
     }
 
 }

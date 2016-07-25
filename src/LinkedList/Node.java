@@ -1,6 +1,6 @@
 package LinkedList;
 
-public class Node {
+public class Node extends Object {
 
     public Integer value;
     public Node next;

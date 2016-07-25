@@ -37,6 +37,10 @@ public class SimplifyPath {
         System.out.println(simplifyPath("/../../"));
         System.out.println(simplifyPath("/home//foo//"));
         System.out.println(simplifyPath("a/./b/../../../c/d/"));
+
+        StringBuilder builder = new StringBuilder("张三");
+        String str=null;
+        System.out.println(builder.append(str));
     }
 
 }

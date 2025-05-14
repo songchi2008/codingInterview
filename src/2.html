@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excel本地搜索工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .search-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        #search-input {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        #results-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            display: none;
+        }
+        .result-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        .result-item:hover {
+            background-color: #f5f5f5;
+        }
+        .highlight {
+            background-color: yellow;
+            font-weight: bold;
+        }
+        .file-input-container {
+            margin-bottom: 20px;
+        }
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>Excel本地搜索工具</h1>
+    
+    <div class="instructions">
+        <h3>使用说明：</h3>
+        <ol>
+            <li>点击下方按钮选择你的Excel文件</li>
+            <li>在搜索框中输入关键词</li>
+            <li>搜索结果会实时显示在下方</li>
+        </ol>
+    </div>
+    
+    <div class="file-input-container">
+        <input type="file" id="file-input" accept=".xlsx, .xls" />
+    </div>
+    
+    <div class="search-container">
+        <input type="text" id="search-input" placeholder="输入关键词搜索..." disabled />
+        <div id="results-container"></div>
+    </div>
+    
+    <div id="data-preview"></div>
+
+    <script>
+        // 存储Excel数据
+        let excelData = [];
+        let headers = [];
+        
+        // 文件输入事件
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                
+                // 获取第一个工作表
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // 转换为JSON
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                
+                if (jsonData.length > 0) {
+                    headers = jsonData[0]; // 第一行作为表头
+                    excelData = jsonData.slice(1); // 剩余行作为数据
+                    
+                    // 启用搜索框
+                    document.getElementById('search-input').disabled = false;
+                    document.getElementById('search-input').placeholder = `已加载 ${excelData.length} 行数据，请输入关键词搜索...`;
+                    
+                    // 显示数据预览
+                    showDataPreview();
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+        
+        // 搜索输入事件
+        document.getElementById('search-input').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.trim().toLowerCase();
+            const resultsContainer = document.getElementById('results-container');
+            
+            if (searchTerm.length === 0) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
+            
+            // 执行搜索
+            const results = searchExcelData(searchTerm);
+            
+            // 显示结果
+            displayResults(results, searchTerm);
+        });
+        
+        // 搜索函数
+        function searchExcelData(searchTerm) {
+            return excelData.filter(row => {
+                return row.some(cell => {
+                    if (cell === null || cell === undefined) return false;
+                    return cell.toString().toLowerCase().includes(searchTerm);
+                });
+            });
+        }
+        
+        // 显示搜索结果
+        function displayResults(results, searchTerm) {
+            const resultsContainer = document.getElementById('results-container');
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<div class="result-item">没有找到匹配的结果</div>';
+                resultsContainer.style.display = 'block';
+                return;
+            }
+            
+            let html = '';
+            
+            // 最多显示100条结果
+            const displayResults = results.slice(0, 100);
+            
+            displayResults.forEach(row => {
+                html += '<div class="result-item">';
+                
+                row.forEach((cell, index) => {
+                    if (index >= headers.length) return;
+                    
+                    const cellText = cell === null || cell === undefined ? '' : cell.toString();
+                    if (cellText.toLowerCase().includes(searchTerm)) {
+                        const highlightedText = cellText.replace(
+                            new RegExp(searchTerm, 'gi'),
+                            match => `<span class="highlight">${match}</span>`
+                        );
+                        html += `<div><strong>${headers[index]}:</strong> ${highlightedText}</div>`;
+                    } else if (cellText) {
+                        html += `<div><strong>${headers[index]}:</strong> ${cellText}</div>`;
+                    }
+                });
+                
+                html += '</div>';
+            });
+            
+            if (results.length > 100) {
+                html += `<div class="result-item">显示前100条结果，共找到 ${results.length} 条匹配记录</div>`;
+            }
+            
+            resultsContainer.innerHTML = html;
+            resultsContainer.style.display = 'block';
+        }
+        
+        // 显示数据预览
+        function showDataPreview() {
+            const previewContainer = document.getElementById('data-preview');
+            
+            if (excelData.length === 0) {
+                previewContainer.innerHTML = '<p>没有数据可显示</p>';
+                return;
+            }
+            
+            let html = '<h3>数据预览 (前10行)</h3>';
+            html += '<table><thead><tr>';
+            
+            // 添加表头
+            headers.forEach(header => {
+                html += `<th>${header}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+            
+            // 添加前10行数据
+            const previewData = excelData.slice(0, 10);
+            previewData.forEach(row => {
+                html += '<tr>';
+                headers.forEach((header, index) => {
+                    const cellValue = index < row.length ? (row[index] !== null ? row[index] : '') : '';
+                    html += `<td>${cellValue}</td>`;
+                });
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            html += `<p>总行数: ${excelData.length} | 列数: ${headers.length}</p>`;
+            
+            previewContainer.innerHTML = html;
+        }
+    </script>
+</body>
+</html>
